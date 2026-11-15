@@ -1,0 +1,29 @@
+{
+  "How many passengers are in the dataset?": {
+    "ok": true,
+    "answer": "There are 891 passengers in the dataset.",
+    "expected": 891.0,
+    "sql": [
+      "SELECT COUNT(*) AS total_passengers FROM passengers;",
+      "SELECT COUNT(DISTINCT PassengerId) FROM passengers;"
+    ]
+  },
+  "How many passengers survived?": {
+    "ok": true,
+    "answer": "342 passengers survived.",
+    "expected": 342.0,
+    "sql": [
+      "SELECT COUNT(*) FROM passengers WHERE Survived = 1",
+      "SELECT Survived, COUNT(*) FROM passengers GROUP BY Survived"
+    ]
+  },
+  "What is the average age of all passengers, rounded to 1 decimal?": {
+    "ok": true,
+    "answer": "The average age of all passengers (for whom age data is available) rounded to 1 decimal place is **29.7** years.",
+    "expected": 29.7,
+    "sql": [
+      "SELECT ROUND(AVG(Age), 1) AS avg_age FROM passengers;",
+      "SELECT AVG(Age), COUNT(Age), COUNT(*) FROM passengers;"
+    ]
+  }
+}
