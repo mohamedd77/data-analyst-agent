@@ -24,6 +24,12 @@ SYSTEM_PROMPT = (
 )
 
 
+def build_system_prompt(tools):
+    info = tools.describe()
+    columns = ", ".join(f"{c['name']} ({c['type']})" for c in info["columns"])
+    return f"{SYSTEM_PROMPT} The table is named {info['table']} and has {info['row_count']} rows. Columns: {columns}."
+
+
 def call_tool(tools, name, args):
     if name == "describe_table":
         return tools.describe()
@@ -35,9 +41,10 @@ def call_tool(tools, name, args):
 def run_agent(question, tools, client, max_steps=6):
     contents = [{"role": "user", "parts": [{"text": question}]}]
     steps = []
+    system = build_system_prompt(tools)
 
     for _ in range(max_steps):
-        reply = client.generate(contents, SYSTEM_PROMPT, TOOL_DECLARATIONS)
+        reply = client.generate(contents, system, TOOL_DECLARATIONS)
         contents.append(reply)  # keep the model's content exactly as received
 
         parts = reply.get("parts", [])

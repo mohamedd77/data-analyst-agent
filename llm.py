@@ -9,7 +9,7 @@ API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models"
 class GeminiClient:
     """Thin wrapper over the Gemini generateContent REST endpoint."""
 
-    def __init__(self, model=None, api_key=None, timeout=120, max_retries=4):
+    def __init__(self, model=None, api_key=None, timeout=120, max_retries=6):
         self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
         self.api_key = api_key or os.environ["GEMINI_API_KEY"]
         self.timeout = timeout
@@ -41,5 +41,5 @@ class GeminiClient:
                     return content
                 last_error = RuntimeError(f"HTTP {r.status_code}")
             if attempt < self.max_retries:
-                time.sleep(5 * 2 ** attempt)  # 5s, 10s, 20s, 40s
+                time.sleep(min(5 * 2 ** attempt, 60))  # 5s, 10s, 20s, 40s, 60s, 60s
         raise RuntimeError(f"Gemini request failed after retries: {last_error}")

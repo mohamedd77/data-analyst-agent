@@ -21,12 +21,24 @@ def score(case, answer):
     return refusal_match(answer)
 
 
-def evaluate(cases, tools, client, results=None, sleep=0, save=None):
+def evaluate(cases, tools, client, results=None, sleep=0, save=None, max_consecutive_failures=3):
     results = {} if results is None else results
+    failures = 0
     for case in cases:
         if case["q"] in results:
             continue  # already done in a previous run
-        out = run_agent(case["q"], tools, client)
+        try:
+            out = run_agent(case["q"], tools, client)
+        except RuntimeError as e:
+            failures += 1
+            print(f"skipped (API error): {case['q']} -> {e}")
+            if failures >= max_consecutive_failures:
+                print("Too many consecutive API errors, stopping. Run again later to resume.")
+                break
+            if sleep:
+                time.sleep(sleep)
+            continue
+        failures = 0
         results[case["q"]] = {
             "ok": bool(score(case, out["answer"])),
             "answer": out["answer"],

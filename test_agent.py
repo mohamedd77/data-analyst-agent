@@ -74,3 +74,17 @@ def test_model_reply_is_kept_exactly_as_received():
     client = FakeClient([reply, text("done")])
     run_agent("x", make_tools(), client)
     assert client.seen[1][1]["parts"][0]["thoughtSignature"] == "sig123"
+
+
+class SystemRecordingClient(FakeClient):
+    def generate(self, contents, system, tool_declarations):
+        self.system = system
+        return super().generate(contents, system, tool_declarations)
+
+
+def test_system_prompt_includes_the_table_schema():
+    client = SystemRecordingClient([text("ok")])
+    run_agent("hi", make_tools(), client)
+    assert "passengers" in client.system
+    assert "Survived" in client.system
+    assert "891" in client.system

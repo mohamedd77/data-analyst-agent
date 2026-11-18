@@ -61,3 +61,35 @@ def test_harness_resumes_from_previous_results():
     done = {cases[0]["q"]: {"ok": True, "answer": "x", "expected": 891.0, "sql": []}}
     results = evaluate(cases, tools, OracleClient(cases), results=done)
     assert results[cases[0]["q"]]["answer"] == "x"
+
+
+class FlakyClient:
+    """Raises an API error for the first calls, then answers like the oracle."""
+
+    def __init__(self, cases, fail_first):
+        self.oracle = OracleClient(cases)
+        self.fail_first = fail_first
+        self.calls = 0
+
+    def generate(self, contents, system, tool_declarations):
+        self.calls += 1
+        if self.calls <= self.fail_first:
+            raise RuntimeError("HTTP 503")
+        return self.oracle.generate(contents, system, tool_declarations)
+
+
+def test_a_failed_question_is_skipped_and_the_run_continues():
+    cases = build_cases(pd.read_csv("titanic.csv"))
+    tools = DataTools("titanic.csv", table="passengers")
+    results = evaluate(cases, tools, FlakyClient(cases, fail_first=1))
+    assert cases[0]["q"] not in results
+    assert len(results) == len(cases) - 1
+
+
+def test_run_stops_after_too_many_consecutive_failures():
+    cases = build_cases(pd.read_csv("titanic.csv"))
+    tools = DataTools("titanic.csv", table="passengers")
+    client = FlakyClient(cases, fail_first=1000)
+    results = evaluate(cases, tools, client, max_consecutive_failures=3)
+    assert results == {}
+    assert client.calls == 3
